@@ -6,7 +6,7 @@
 #
 
 """
-Collection of commonly used uitility functions
+Collection of commonly used utility functions
 """
 
 import collections
@@ -70,7 +70,7 @@ def group_by_dtype(tensors):
     return tensors_by_dtype
 
 
-def communicate(tensors, communication_op):
+def communicate(tensors, communication_op, logger=None):
     """
     Communicate a list of tensors.
     Arguments:
@@ -82,10 +82,19 @@ def communicate(tensors, communication_op):
     tensors_by_dtype = group_by_dtype(tensors)
     for dtype in tensors_by_dtype:
         flat_tensor = flatten_tensors(tensors_by_dtype[dtype])
+        if logger is not None:
+            logger.debug("Flatten completed")
         communication_op(tensor=flat_tensor)
-        for f, t in zip(unflatten_tensors(flat_tensor, tensors_by_dtype[dtype]),
-                        tensors_by_dtype[dtype]):
-            t.set_(f)
+        if logger is not None:
+            logger.debug("Commmunication completed")
+        with torch.no_grad():
+            for f, t in zip(
+                unflatten_tensors(flat_tensor, tensors_by_dtype[dtype]),
+                tensors_by_dtype[dtype],
+            ):
+                t.copy_(f)
+        if logger is not None:
+            logger.debug("Unflatten completed")
 
 
 def make_logger(rank, verbose=True):
@@ -98,14 +107,14 @@ def make_logger(rank, verbose=True):
         Python logger
     """
     logger = logging.getLogger(__name__)
-    if not getattr(logger, 'handler_set', None):
+    if not getattr(logger, "handler_set", None):
         console = logging.StreamHandler(stream=sys.stdout)
-        format_str = '{}'.format(rank)
-        format_str += ': %(levelname)s -- %(threadName)s -- %(message)s'
+        format_str = "{}".format(rank)
+        format_str += ": %(levelname)s -- %(threadName)s -- %(message)s"
         console.setFormatter(logging.Formatter(format_str))
         logger.addHandler(console)  # prints to console
         logger.handler_set = True
-    if not getattr(logger, 'level_set', None):
+    if not getattr(logger, "level_set", None):
         if verbose:
             logger.setLevel(logging.DEBUG)
         else:
@@ -144,3 +153,13 @@ def create_process_group(ranks):
     new_group = dist.new_group(ranks)
     dist.all_reduce(initializer_tensor, group=new_group)
     return new_group
+
+
+class MultiProcessAdapter(logging.LoggerAdapter):
+    """
+    Creates an adapter to make logging for multiple processes cleaner.
+    """
+    def process(self, msg, kwargs):
+        # use process_num from kwargs or the default given on instantiation
+        process_num = kwargs.pop('process_num', self.extra['process_num'])
+        return f'process: {process_num} {msg}', kwargs

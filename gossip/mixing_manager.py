@@ -12,12 +12,10 @@ Mixing Manager Class
               for gossip
 """
 
-
 import torch
 
 
 class MixingManager(object):
-
     def __init__(self, graph, device):
         self.graph_manager = graph
         self.device = device
@@ -39,18 +37,18 @@ class MixingManager(object):
 
 
 class UniformMixing(MixingManager):
-
     def get_mixing_weights(self, residual_adjusted=True):
         """ Create mixing weight dictionary using uniform allocation """
         mixing_weights = {}
         out_peers, _ = self.graph_manager.get_peers()
 
-        w = torch.tensor([1. / (len(out_peers) + 1.)], device=self.device)
-        mixing_weights['lo'] = w.clone()
-        w_op = w if not residual_adjusted else w / mixing_weights['lo']
-        mixing_weights['uniform'] = w_op.clone()
+        w = torch.tensor([1.0 / (len(out_peers) + 1.0)], device=self.device)
+        mixing_weights["lo"] = w.clone()
+        w_op = w if not residual_adjusted else w / mixing_weights["lo"]
+        mixing_weights["uniform"] = w_op.clone()
         for op in out_peers:
             mixing_weights[op] = w_op.clone()
         return mixing_weights
 
-    def is_uniform(self): return True
+    def is_uniform(self):
+        return True

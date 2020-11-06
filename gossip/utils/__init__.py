@@ -5,6 +5,13 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-from .helpers import \
-    (flatten_tensors, unflatten_tensors, make_logger, group_by_dtype,
-     is_power_of, create_process_group, communicate)
+from .helpers import (
+    communicate,
+    create_process_group,
+    flatten_tensors,
+    group_by_dtype,
+    is_power_of,
+    make_logger,
+    unflatten_tensors,
+    MultiProcessAdapter,
+)

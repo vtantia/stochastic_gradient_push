@@ -13,8 +13,7 @@ Benchmarking utils for timing code snippets
 class Meter(object):
     """ Computes and stores the average, variance, and current value """
 
-    def __init__(self, init_dict=None, ptag='Time', stateful=False,
-                 csv_format=True):
+    def __init__(self, init_dict=None, ptag="Time", stateful=False, csv_format=True):
         """
         :param init_dict: Dictionary to initialize meter values
         :param ptag: Print tag used in __str__() to identify meter
@@ -33,7 +32,7 @@ class Meter(object):
                     # TODO: add type checking to init_dict values
                     self.__dict__[key] = init_dict[key]
                 except Exception:
-                    print('(Warning) Invalid key {} in init_dict'.format(key))
+                    print("(Warning) Invalid key {} in init_dict".format(key))
 
     def reset(self):
         self.val = 0
@@ -51,9 +50,9 @@ class Meter(object):
         self.avg = self.sum / self.count
         self.sqsum += (val ** 2) * n
         if self.count > 1:
-            self.std = ((self.sqsum - (self.sum ** 2) / self.count)
-                        / (self.count - 1)
-                        ) ** 0.5
+            self.std = (
+                (self.sqsum - (self.sum ** 2) / self.count) / (self.count - 1)
+            ) ** 0.5
         if self.stateful:
             self.value_history.append(val)
             mad = 0
@@ -64,17 +63,15 @@ class Meter(object):
     def __str__(self):
         if self.csv_format:
             if self.stateful:
-                return str('{dm.val:.3f},{dm.avg:.3f},{dm.mad:.3f}'
-                           .format(dm=self))
+                return str("{dm.val:.3f},{dm.avg:.3f},{dm.mad:.3f}".format(dm=self))
             else:
-                return str('{dm.val:.3f},{dm.avg:.3f},{dm.std:.3f}'
-                           .format(dm=self))
+                return str("{dm.val:.3f},{dm.avg:.3f},{dm.std:.3f}".format(dm=self))
         else:
             if self.stateful:
-                return str(self.ptag) + \
-                       str(': {dm.val:.3f} ({dm.avg:.3f} +- {dm.mad:.3f})'
-                           .format(dm=self))
+                return str(self.ptag) + str(
+                    ": {dm.val:.3f} ({dm.avg:.3f} +- {dm.mad:.3f})".format(dm=self)
+                )
             else:
-                return str(self.ptag) + \
-                       str(': {dm.val:.3f} ({dm.avg:.3f} +- {dm.std:.3f})'
-                           .format(dm=self))
+                return str(self.ptag) + str(
+                    ": {dm.val:.3f} ({dm.avg:.3f} +- {dm.std:.3f})".format(dm=self)
+                )
