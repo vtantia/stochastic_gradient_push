@@ -35,6 +35,7 @@ from .graph_manager import NPeerDynamicDirectedExponentialGraph as NPDDEGraph
 from .mixing_manager import UniformMixing
 from .utils import (
     communicate,
+    create_process_group,
     flatten_tensors,
     group_by_dtype,
     make_logger,
@@ -134,7 +135,7 @@ class GossipDataParallel(Module):
                     )
                     # Process group to communicate between processes on this
                     # machine
-                    new_local_group = dist.new_group(node_processes_ranks)
+                    new_local_group = create_process_group(node_processes_ranks)
                     if self.process_rank in node_processes_ranks:
                         self.local_node_group = new_local_group
                 self.logger.debug("Initialization of local groups complete")
@@ -145,7 +146,7 @@ class GossipDataParallel(Module):
                 master_nodes = [
                     i for i in range(dist.get_world_size()) if i % nprocs_per_node == 0
                 ]
-                self.master_group = dist.new_group(master_nodes) if len(master_nodes) > 1 else None
+                self.master_group = create_process_group(master_nodes) if len(master_nodes) > 1 else None
                 if self.master_group is not None and self.process_rank in master_nodes:
                     self.logger.debug("Initialization of master group complete")
             else:
@@ -633,6 +634,7 @@ class GossipDataParallel(Module):
             if not allreduce_params:
                 self.transfer_params()
                 self._query_gossip_queue()
+                torch.cuda.synchronize()
             sgp_rec.stop()
             self.logger.debug("SGP completed")
 
@@ -654,12 +656,14 @@ class GossipDataParallel(Module):
             # self.logger.debug("Barrier completed before localsgd step")
 
             communicate(params, communication_op, self.logger)
+            torch.cuda.synchronize()
             self.logger.debug("Allreduce completed")
         localsgd_rec.stop()
 
         ef_unroll_rec = self.create_event_recorder("Sync and error feedback unroll rec")
         if self.sgp or allreduce_params:
             self._sync_params()
+            torch.cuda.synchronize()
 
             # Error Feedback Reversal
             with torch.no_grad():

@@ -14,20 +14,14 @@ Graph Manager Class
 
 from math import log as mlog
 
-import torch
-import torch.distributed as dist
+from .utils import create_process_group
 
 
 class Edge(object):
     def __init__(self, local_master_rank, dest, src, local_rank):
         self.src = src
         self.dest = dest
-        self.process_group = dist.new_group([src, dest])
-        if local_master_rank in [self.src, self.dest] and local_rank == 0:
-            initializer_tensor = torch.Tensor([1]).cuda()
-            dist.all_reduce(initializer_tensor, group=self.process_group)
-            initializer_tensor = torch.Tensor([1]).cuda().half()
-            dist.all_reduce(initializer_tensor, group=self.process_group)
+        self.process_group = create_process_group(ranks=[src, dest])
 
 
 class GraphManager(object):
